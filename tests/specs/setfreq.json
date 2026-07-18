@@ -1,0 +1,20 @@
+[
+  {
+    "name": "/setfreq",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Change post frequency (allowed values: 5,15,30,60,240,1440 minutes)"
+            }
+          }
+        ],
+        "send": {
+          "text": "/setfreq"
+        }
+      }
+    ]
+  }
+]
