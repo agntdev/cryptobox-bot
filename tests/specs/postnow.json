@@ -1,19 +1,33 @@
 [
   {
-    "name": "/postnow",
+    "name": "/postnow shows error when no channel configured",
     "steps": [
       {
+        "send": { "text": "/postnow" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Trigger an immediate post"
+              "text": "⚠️ No channel configured yet. Set a channel first."
             }
           }
-        ],
-        "send": {
-          "text": "/postnow"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "postnow button tap shows error when no channel",
+    "steps": [
+      {
+        "send": { "callback": "postnow:do" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "⚠️ No channel configured yet. Set a channel first."
+            }
+          }
+        ]
       }
     ]
   }

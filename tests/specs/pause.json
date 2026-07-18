@@ -1,19 +1,33 @@
 [
   {
-    "name": "/pause",
+    "name": "/pause pauses scheduled posts",
     "steps": [
       {
+        "send": { "text": "/pause" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Pause scheduled posts"
+              "text": "⏸️ Scheduled posts paused."
             }
           }
-        ],
-        "send": {
-          "text": "/pause"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "pause button tap pauses posts",
+    "steps": [
+      {
+        "send": { "callback": "pause:do" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "⏸️ Scheduled posts paused."
+            }
+          }
+        ]
       }
     ]
   }

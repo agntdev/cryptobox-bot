@@ -1,19 +1,33 @@
 [
   {
-    "name": "/resume",
+    "name": "/resume resumes scheduled posts",
     "steps": [
       {
+        "send": { "text": "/resume" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Resume scheduled posts"
+              "text": "▶️ Scheduled posts resumed."
             }
           }
-        ],
-        "send": {
-          "text": "/resume"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "resume button tap resumes posts",
+    "steps": [
+      {
+        "send": { "callback": "resume:do" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "▶️ Scheduled posts resumed."
+            }
+          }
+        ]
       }
     ]
   }

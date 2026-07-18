@@ -1,15 +1,23 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { inlineButton, inlineKeyboard } from "../toolkit/index.js";
+import { getGlobalSchedule, setGlobalSchedule } from "../scheduler.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
+const composer = new Composer<Ctx>();
 
-const composer = new Composer();
+const backToMenu = inlineKeyboard([[inlineButton("⬅️ Back to menu", "menu:main")]]);
 
 composer.command("pause", async (ctx) => {
-  await ctx.reply("Pause scheduled posts");
+  const sch = getGlobalSchedule();
+  setGlobalSchedule({ ...sch, isPaused: true });
+  await ctx.reply("⏸️ Scheduled posts paused.", { reply_markup: backToMenu });
+});
+
+composer.callbackQuery("pause:do", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const sch = getGlobalSchedule();
+  setGlobalSchedule({ ...sch, isPaused: true });
+  await ctx.editMessageText("⏸️ Scheduled posts paused.", { reply_markup: backToMenu });
 });
 
 export default composer;
