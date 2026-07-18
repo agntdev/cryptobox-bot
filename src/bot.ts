@@ -2,7 +2,7 @@ import { Composer } from "grammy";
 import { readdirSync } from "node:fs";
 import { createBot, type BotContext } from "./toolkit/index.js";
 import type { AdminSettings, ScheduleState, PostRecord } from "./scheduler.js";
-import { DEFAULT_SETTINGS } from "./scheduler.js";
+import { DEFAULT_SETTINGS, resetGlobalConfig } from "./scheduler.js";
 
 export interface Session {
   settings: AdminSettings;
@@ -14,6 +14,7 @@ export interface Session {
 export type Ctx = BotContext<Session>;
 
 export async function buildBot(token: string) {
+  resetGlobalConfig();
   const bot = createBot<Session>(token, {
     initial: () => ({
       settings: { ...DEFAULT_SETTINGS },
