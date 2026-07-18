@@ -1,15 +1,49 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { inlineButton, inlineKeyboard } from "../toolkit/index.js";
+import { getGlobalSettings, getGlobalPosts, postUpdate, now } from "../scheduler.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
+const composer = new Composer<Ctx>();
 
-const composer = new Composer();
+const backToMenu = inlineKeyboard([[inlineButton("⬅️ Back to menu", "menu:main")]]);
 
 composer.command("postnow", async (ctx) => {
-  await ctx.reply("Trigger an immediate post");
+  const s = getGlobalSettings();
+  if (!s.channelId) {
+    await ctx.reply("⚠️ No channel configured yet. Set a channel first.", {
+      reply_markup: backToMenu,
+    });
+    return;
+  }
+  try {
+    await ctx.reply("⏳ Posting update…");
+    await postUpdate(ctx.api, s, now);
+    await ctx.reply("✅ Update posted!", { reply_markup: backToMenu });
+  } catch (err) {
+    await ctx.reply("❌ Couldn't post. Check channel permissions and try again.", {
+      reply_markup: backToMenu,
+    });
+  }
+});
+
+composer.callbackQuery("postnow:do", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const s = getGlobalSettings();
+  if (!s.channelId) {
+    await ctx.editMessageText("⚠️ No channel configured yet. Set a channel first.", {
+      reply_markup: backToMenu,
+    });
+    return;
+  }
+  try {
+    await ctx.editMessageText("⏳ Posting update…");
+    await postUpdate(ctx.api, s, now);
+    await ctx.editMessageText("✅ Update posted!", { reply_markup: backToMenu });
+  } catch (err) {
+    await ctx.editMessageText("❌ Couldn't post. Check channel permissions and try again.", {
+      reply_markup: backToMenu,
+    });
+  }
 });
 
 export default composer;

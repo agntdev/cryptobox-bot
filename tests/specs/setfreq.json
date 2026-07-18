@@ -1,19 +1,65 @@
 [
   {
-    "name": "/setfreq",
+    "name": "/setfreq shows frequency options",
     "steps": [
       {
+        "send": { "text": "/setfreq" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Change post frequency (allowed values: 5,15,30,60,240,1440 minutes)"
+              "text": "⏱️ Post Frequency\n\nCurrent: every 15 minutes\n\nTap a frequency to change it:"
             }
           }
-        ],
-        "send": {
-          "text": "/setfreq"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "/setfreq with valid value updates frequency",
+    "steps": [
+      {
+        "send": { "text": "/setfreq 30" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "✅ Frequency updated to every 30 minutes."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "/setfreq with invalid value shows error",
+    "steps": [
+      {
+        "send": { "text": "/setfreq 7" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "❌ Invalid frequency. Allowed values: 5, 15, 30, 60, 240, 1440 minutes."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "setfreq button tap updates frequency",
+    "steps": [
+      {
+        "send": { "callback": "setfreq:set:60" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "✅ Frequency updated to every 60 minutes."
+            }
+          }
+        ]
       }
     ]
   }

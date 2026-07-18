@@ -1,19 +1,81 @@
 [
   {
-    "name": "/setassets",
+    "name": "/setassets shows tracked assets",
     "steps": [
       {
+        "send": { "text": "/setassets" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Adjust tracked crypto assets (comma-separated symbols)"
+              "text": "🪙 Tracked Assets\n\nCurrent: BTC, ETH, SOL\n\nTap to toggle an asset on or off:"
             }
           }
-        ],
-        "send": {
-          "text": "/setassets"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "/setassets with valid symbols updates assets",
+    "steps": [
+      {
+        "send": { "text": "/setassets BTC,DOGE" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "✅ Tracking: BTC, DOGE"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "/setassets with invalid symbols shows error",
+    "steps": [
+      {
+        "send": { "text": "/setassets XYZ,ABC" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "❌ No valid assets found. Use comma-separated symbols like: BTC, ETH, SOL"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "setassets toggle adds asset",
+    "steps": [
+      {
+        "send": { "callback": "setassets:toggle:dogecoin" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "🪙 Tracked Assets\n\nCurrent: BTC, ETH, SOL, DOGE\n\nTap to toggle an asset on or off:"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "setassets toggle removes asset",
+    "steps": [
+      {
+        "send": { "callback": "setassets:toggle:bitcoin" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "🪙 Tracked Assets\n\nCurrent: ETH, SOL\n\nTap to toggle an asset on or off:"
+            }
+          }
+        ]
       }
     ]
   }

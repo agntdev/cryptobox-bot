@@ -1,19 +1,33 @@
 [
   {
-    "name": "/status",
+    "name": "/status shows current settings",
     "steps": [
       {
+        "send": { "text": "/status" },
         "expect": [
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Show current settings and next scheduled post"
+              "text": "📊 Current Settings\n\nChannel: Not set\nStatus: Running\nFrequency: 15 min (options: 5, 15, 30, 60, 240, 1440 min)\nAssets: BITCOIN, ETHEREUM, SOLANA\nTimezone: UTC\n\nNext post: Not scheduled\nPosts so far: 0"
             }
           }
-        ],
-        "send": {
-          "text": "/status"
-        }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "status button tap shows settings",
+    "steps": [
+      {
+        "send": { "callback": "status:show" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": {
+              "text": "📊 Current Settings\n\nChannel: Not set\nStatus: Running\nFrequency: 15 min (options: 5, 15, 30, 60, 240, 1440 min)\nAssets: BITCOIN, ETHEREUM, SOLANA\nTimezone: UTC\n\nNext post: Not scheduled\nPosts so far: 0"
+            }
+          }
+        ]
       }
     ]
   }

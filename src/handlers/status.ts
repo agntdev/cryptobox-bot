@@ -1,15 +1,54 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { inlineButton, inlineKeyboard } from "../toolkit/index.js";
+import { registerMainMenuItem } from "../toolkit/index.js";
+import { ALLOWED_FREQUENCIES, getGlobalSettings, getGlobalSchedule, getGlobalPosts } from "../scheduler.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
+const composer = new Composer<Ctx>();
 
-const composer = new Composer();
+function formatStatus(): string {
+  const s = getGlobalSettings();
+  const sch = getGlobalSchedule();
+  const posts = getGlobalPosts();
+  const freqLabel = `${s.postFrequency} min`;
+  const assets = s.trackedAssets.join(", ").toUpperCase();
+  const status = sch.isPaused ? "Paused" : "Running";
+  const channel = s.channelId || "Not set";
+  const nextPost =
+    sch.nextPostTime > 0
+      ? new Date(sch.nextPostTime).toLocaleString("en-US", {
+          timeZone: s.timezone,
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZoneName: "short",
+        })
+      : "Not scheduled";
+
+  return [
+    "📊 Current Settings",
+    "",
+    `Channel: ${channel}`,
+    `Status: ${status}`,
+    `Frequency: ${freqLabel} (options: ${ALLOWED_FREQUENCIES.join(", ")} min)`,
+    `Assets: ${assets}`,
+    `Timezone: ${s.timezone}`,
+    "",
+    `Next post: ${nextPost}`,
+    `Posts so far: ${posts.length}`,
+  ].join("\n");
+}
+
+const backToMenu = inlineKeyboard([[inlineButton("⬅️ Back to menu", "menu:main")]]);
 
 composer.command("status", async (ctx) => {
-  await ctx.reply("Show current settings and next scheduled post");
+  await ctx.reply(formatStatus(), { reply_markup: backToMenu });
+});
+
+composer.callbackQuery("status:show", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageText(formatStatus(), { reply_markup: backToMenu });
 });
 
 export default composer;
