@@ -1,0 +1,207 @@
+[
+  {
+    "name": "/list_schedules shows empty state when no schedules",
+    "steps": [
+      {
+        "send": { "text": "/list_schedules" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": { "text": "📋 No scheduled posts yet.\n\nTap 📝 Add post to create one." }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sched:list callback shows empty state",
+    "steps": [
+      {
+        "send": { "callback": "sched:list" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "📋 No scheduled posts yet.\n\nTap 📝 Add post to create one." }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sched:add:start opens the add post flow",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "📝 Create a scheduled post\n\nChoose the post type:" }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "selecting price type prompts for assets",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:type:price" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "📊 Price Snapshot\n\nEnter comma-separated asset symbols (e.g. BTC, ETH, SOL):" }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "entering assets and datetime completes price schedule",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:type:price" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "text": "BTC, ETH" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": { "text": "📅 When should this post be published?\n\nEnter date and time (e.g. 2025-01-15 14:30 or 'in 30m', 'in 2h'):" }
+          }
+        ]
+      },
+      {
+        "send": { "text": "in 60m" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": { "text": "🔄 How often should this repeat?" }
+          }
+        ]
+      },
+      {
+        "send": { "callback": "sched:rec:once" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:confirm:yes" },
+        "expect": [{ "method": "editMessageText" }]
+      }
+    ]
+  },
+  {
+    "name": "selecting signal type prompts for pair",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:type:signal" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "📈 Signal\n\nEnter the trading pair (e.g. BTC/USDT):" }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "selecting news type prompts for headline",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:type:news" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "📰 News\n\nEnter the news headline:" }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "selecting custom type prompts for text",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:type:custom" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "✏️ Custom Post\n\nEnter the message text:" }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sched:cancel cancels the flow",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:cancel" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "Cancelled. Tap /start to begin again." }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sched:confirm:no cancels and shows cancelled message",
+    "steps": [
+      {
+        "send": { "callback": "sched:add:start" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:type:custom" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "text": "Hello world" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "text": "in 30m" },
+        "expect": [{ "method": "sendMessage" }]
+      },
+      {
+        "send": { "callback": "sched:rec:daily" },
+        "expect": [{ "method": "editMessageText" }]
+      },
+      {
+        "send": { "callback": "sched:confirm:no" },
+        "expect": [
+          {
+            "method": "editMessageText",
+            "payload": { "text": "Cancelled. Tap /start to begin again." }
+          }
+        ]
+      }
+    ]
+  }
+]

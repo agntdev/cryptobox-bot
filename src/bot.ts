@@ -1,14 +1,29 @@
 import { Composer } from "grammy";
 import { readdirSync } from "node:fs";
 import { createBot, type BotContext } from "./toolkit/index.js";
-import type { AdminSettings, ScheduleState, PostRecord } from "./scheduler.js";
+import type { AdminSettings, ScheduleState, PostRecord, ScheduledPost } from "./scheduler.js";
 import { DEFAULT_SETTINGS, resetGlobalConfig } from "./scheduler.js";
 
 export interface Session {
   settings: AdminSettings;
   schedule: ScheduleState;
   posts: PostRecord[];
+  scheduledPosts: ScheduledPost[];
   step?: string;
+  flowStep?: string;
+  flowData?: {
+    type?: string;
+    assets?: string[];
+    pair?: string;
+    signalText?: string;
+    imageUrl?: string;
+    newsUrl?: string;
+    newsTitle?: string;
+    customText?: string;
+    scheduledTime?: string;
+    recurrence?: string;
+    timezone?: string;
+  };
 }
 
 export type Ctx = BotContext<Session>;
@@ -24,6 +39,7 @@ export async function buildBot(token: string) {
         isPaused: false,
       },
       posts: [],
+      scheduledPosts: [],
     }),
   });
 
