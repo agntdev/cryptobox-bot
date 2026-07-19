@@ -28,6 +28,40 @@ export interface PostRecord {
   summary: string;
 }
 
+export type ScheduledPostType = "price" | "signal" | "news" | "custom";
+export type RecurrenceType = "once" | "daily" | "weekly" | "custom";
+export type ScheduledPostStatus = "pending" | "completed" | "disabled";
+
+export interface ScheduledPostContent {
+  assets?: string[];
+  pair?: string;
+  signalText?: string;
+  imageUrl?: string;
+  newsUrl?: string;
+  newsTitle?: string;
+  customText?: string;
+}
+
+export interface ScheduledPost {
+  id: string;
+  adminUserId: number;
+  type: ScheduledPostType;
+  content: ScheduledPostContent;
+  channelId: string;
+  scheduledTime: string;
+  recurrence: RecurrenceType;
+  cronExpression?: string;
+  timezone: string;
+  status: ScheduledPostStatus;
+  createdAt: string;
+}
+
+let nextScheduleId = 1;
+
+export function generateScheduleId(): string {
+  return `sp_${nextScheduleId++}`;
+}
+
 export const DEFAULT_SETTINGS: AdminSettings = {
   channelId: "",
   enabled: true,
@@ -51,10 +85,12 @@ const globalConfig: {
   settings: AdminSettings;
   schedule: ScheduleState;
   posts: PostRecord[];
+  scheduledPosts: ScheduledPost[];
 } = {
   settings: { ...DEFAULT_SETTINGS },
   schedule: { lastPostTime: 0, nextPostTime: 0, isPaused: false },
   posts: [],
+  scheduledPosts: [],
 };
 
 export function getGlobalSettings(): AdminSettings {
@@ -67,6 +103,10 @@ export function getGlobalSchedule(): ScheduleState {
 
 export function getGlobalPosts(): PostRecord[] {
   return globalConfig.posts;
+}
+
+export function getGlobalScheduledPosts(): ScheduledPost[] {
+  return globalConfig.scheduledPosts;
 }
 
 export function setGlobalSettings(settings: AdminSettings): void {
@@ -82,10 +122,40 @@ export function addGlobalPost(record: PostRecord): void {
   if (globalConfig.posts.length > 50) globalConfig.posts.shift();
 }
 
+export function addScheduledPost(post: ScheduledPost): void {
+  globalConfig.scheduledPosts.push(post);
+}
+
+export function getScheduledPost(id: string): ScheduledPost | undefined {
+  return globalConfig.scheduledPosts.find((p) => p.id === id);
+}
+
+export function updateScheduledPost(id: string, updates: Partial<ScheduledPost>): boolean {
+  const idx = globalConfig.scheduledPosts.findIndex((p) => p.id === id);
+  if (idx < 0) return false;
+  globalConfig.scheduledPosts[idx] = { ...globalConfig.scheduledPosts[idx], ...updates };
+  return true;
+}
+
+export function deleteScheduledPost(id: string): boolean {
+  const idx = globalConfig.scheduledPosts.findIndex((p) => p.id === id);
+  if (idx < 0) return false;
+  globalConfig.scheduledPosts.splice(idx, 1);
+  return true;
+}
+
+export function getUpcomingScheduledPosts(): ScheduledPost[] {
+  return globalConfig.scheduledPosts
+    .filter((p) => p.status === "pending")
+    .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
+}
+
 export function resetGlobalConfig(): void {
   globalConfig.settings = { ...DEFAULT_SETTINGS };
   globalConfig.schedule = { lastPostTime: 0, nextPostTime: 0, isPaused: false };
   globalConfig.posts = [];
+  globalConfig.scheduledPosts = [];
+  nextScheduleId = 1;
 }
 
 function apiSend(api: Api<any>, chatId: string, text: string): Promise<any> {
@@ -132,6 +202,40 @@ export function startScheduler(
         }
       }
     }
+
+    // Process scheduled posts
+    try {
+      const upcoming = getUpcomingScheduledPosts();
+      const settings = getGlobalSettings();
+      const currentTime = clock();
+
+      for (const post of upcoming) {
+        const postTime = new Date(post.scheduledTime).getTime();
+        if (postTime <= currentTime) {
+          try {
+            await postScheduledMessage(bot.api, post, settings, clock);
+            addGlobalPost({
+              timestamp: currentTime,
+              summary: `Scheduled post ${post.id} posted (${post.type})`,
+            });
+          } catch (postErr) {
+            console.error(`[scheduler] scheduled post ${post.id} error:`, postErr);
+            if (settings.ownerChatId > 0) {
+              try {
+                await bot.api.sendMessage(
+                  settings.ownerChatId,
+                  `⚠️ Failed to post scheduled message (${post.id}). Will retry.`,
+                );
+              } catch {
+                // owner may have blocked the bot
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[scheduler] scheduled posts processing error:", err);
+    }
   }, 30_000);
 
   schedulerTimer.unref?.();
@@ -176,4 +280,78 @@ export async function postUpdate(
     timestamp: clock(),
     summary: `Posted update: ${prices.map((p) => p.symbol).join(", ")}`,
   });
+}
+
+export function buildScheduledPostMessage(post: ScheduledPost): string {
+  const lines: string[] = [];
+  switch (post.type) {
+    case "price":
+      lines.push("📊 Scheduled Price Snapshot");
+      if (post.content.assets && post.content.assets.length > 0) {
+        lines.push(`Assets: ${post.content.assets.join(", ").toUpperCase()}`);
+      }
+      break;
+    case "signal":
+      lines.push("📈 Scheduled Signal");
+      if (post.content.pair) lines.push(`Pair: ${post.content.pair}`);
+      if (post.content.signalText) lines.push(post.content.signalText);
+      break;
+    case "news":
+      lines.push("📰 Scheduled News");
+      if (post.content.newsTitle) lines.push(post.content.newsTitle);
+      if (post.content.newsUrl) lines.push(post.content.newsUrl);
+      break;
+    case "custom":
+      lines.push("📝 Custom Post");
+      if (post.content.customText) lines.push(post.content.customText);
+      break;
+  }
+  lines.push("");
+  lines.push(`Scheduled: ${post.scheduledTime} (${post.timezone})`);
+  lines.push(`Recurrence: ${post.recurrence}`);
+  return lines.join("\n");
+}
+
+export async function postScheduledMessage(
+  api: Api<any>,
+  post: ScheduledPost,
+  settings: AdminSettings,
+  clock: () => number = now,
+): Promise<void> {
+  let message = "";
+
+  switch (post.type) {
+    case "price": {
+      const assets = post.content.assets ?? settings.trackedAssets;
+      const prices = await fetchPrices(assets);
+      const signals = computeSignals(prices);
+      const ts = new Date(clock()).toLocaleString("en-US", {
+        timeZone: settings.timezone,
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+      const snapshot: MarketSnapshot = { prices, signals, news: [], timestamp: ts };
+      message = formatSnapshot(snapshot);
+      break;
+    }
+    case "signal":
+      message = `📈 Signal: ${post.content.pair ?? "N/A"}\n${post.content.signalText ?? ""}`;
+      break;
+    case "news":
+      message = `📰 ${post.content.newsTitle ?? "News"}\n${post.content.newsUrl ?? ""}`;
+      break;
+    case "custom":
+      message = post.content.customText ?? "Custom post";
+      break;
+  }
+
+  const channelId = post.channelId || settings.channelId;
+  await apiSend(api, channelId, message);
+
+  if (post.recurrence === "once") {
+    updateScheduledPost(post.id, { status: "completed" });
+  }
 }
